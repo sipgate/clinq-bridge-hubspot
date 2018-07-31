@@ -7,7 +7,7 @@
 		"start": "node index.js"
 	},
 	"dependencies": {
-		"@clinq/bridge": "^3.0.0",
+		"@clinq/bridge": "^3.2.0",
 		"hubspot": "^1.2.3"
 	}
 }
