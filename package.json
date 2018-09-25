@@ -1,13 +1,13 @@
 {
-	"name": "clinq-hubspot",
-	"version": "1.0.0",
-	"main": "index.js",
-	"license": "MIT",
-	"scripts": {
-		"start": "node index.js"
-	},
-	"dependencies": {
-		"@clinq/bridge": "^3.2.0",
-		"hubspot": "^1.2.3"
-	}
+  "name": "clinq-hubspot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@clinq/bridge": "^5.0.0",
+    "hubspot": "^1.2.3"
+  }
 }
