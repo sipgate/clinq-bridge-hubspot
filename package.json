@@ -9,7 +9,7 @@
     "watch": "nodemon index.js"
   },
   "dependencies": {
-    "@clinq/bridge": "^6.0.0",
+    "@clinq/bridge": "^7.0.2",
     "hubspot": "^2.0.0"
   },
   "devDependencies": {
