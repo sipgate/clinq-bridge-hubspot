@@ -1,4 +1,6 @@
-const clinq = require("@clinq/bridge");
+const {
+  start
+} = require("@clinq/bridge");
 const {
   getContacts,
   createContact,
@@ -7,18 +9,30 @@ const {
 } = require("./lib/clinq-loader");
 
 const adapter = {
-  getContacts: async ({ apiKey, apiUrl }) => {
+  getContacts: async ({
+    apiKey,
+    apiUrl
+  }) => {
     return await getContacts(apiKey, apiUrl);
   },
-  createContact: async ({ apiKey, apiUrl }, contact) => {
+  createContact: async ({
+    apiKey,
+    apiUrl
+  }, contact) => {
     return await createContact(apiKey, contact);
   },
-  updateContact: async ({ apiKey, apiUrl }, id, contact) => {
+  updateContact: async ({
+    apiKey,
+    apiUrl
+  }, id, contact) => {
     return await updateContact(apiKey, id, contact);
   },
-  deleteContact: async ({ apiKey, apiUrl }, id) => {
+  deleteContact: async ({
+    apiKey,
+    apiUrl
+  }, id) => {
     return await deleteContact(apiKey, id);
   }
 };
 
-clinq.start(adapter);
+start(adapter);
