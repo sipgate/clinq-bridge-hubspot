@@ -1,4 +1,4 @@
-import { Config, Contact, ServerError } from "@clinq/bridge";
+import { Config, Contact, ContactTemplate, ContactUpdate, ServerError } from "@clinq/bridge";
 import { Request } from "express";
 import Hubspot from "hubspot";
 import {
@@ -8,15 +8,9 @@ import {
   parseEnvironment
 } from "./utils";
 
-interface Page {
-  contacts: Contact[];
-  more: boolean;
-  nextPage: number;
-}
-
 const { clientId, clientSecret, redirectUrl } = parseEnvironment();
 
-export const createClient = async apiKey => {
+export const createClient = async (apiKey: string) => {
   const [accessToken, refreshToken] = apiKey.split(":");
 
   if (refreshToken) {
@@ -38,68 +32,50 @@ export const createClient = async apiKey => {
   return new Hubspot({ apiKey: accessToken });
 };
 
-export const getContacts = async ({ apiKey }) => {
+export const getContacts = async ({ apiKey }: Config) => {
   const client = await createClient(apiKey);
   return getContactsPage(apiKey, client, 0, []);
 };
 
-export const createContact = async ({ apiKey }, contact) => {
-  const anonKey = anonymizeKey(apiKey);
-
-  try {
-    const client = await createClient(apiKey);
-    const hubspotContact = await client.contacts.create(
-      convertToHubspotContact(contact)
-    );
-    contact = convertToClinqContact(hubspotContact);
-  } catch (error) {
-    // tslint:disable-next-line:no-console
-    console.error(
-      `Could not create contact for key "${anonKey}: ${error.message}"`
-    );
-    throw new ServerError(400, "Could not create contact");
-  }
-
-  // tslint:disable-next-line:no-console
-  console.log(`Created contact for ${anonKey}`);
-
-  return contact;
-};
-
-export const updateContact = async (
-  { apiKey },
-  id,
-  contact
+export const createContact = async (
+  { apiKey }: Config,
+  contact: ContactTemplate
 ): Promise<Contact> => {
   const anonKey = anonymizeKey(apiKey);
 
   try {
     const client = await createClient(apiKey);
-    await client.contacts.update(id, convertToHubspotContact(contact));
+    const hubspotContact = await client.contacts.create(convertToHubspotContact(contact));
+    const convertedContact: Contact = convertToClinqContact(hubspotContact);
+    // tslint:disable-next-line:no-console
+    console.log(`Created contact for ${anonKey}`);
+    return convertedContact;
   } catch (error) {
     // tslint:disable-next-line:no-console
-    console.error(
-      `Could not update contact for key "${anonKey}: ${error.message}"`
-    );
-    throw new ServerError(400, "Could not update contact");
+    console.error(`Could not create contact for key "${anonKey}: ${error.message}"`);
+    throw new ServerError(400, "Could not create contact");
   }
-
-  // tslint:disable-next-line:no-console
-  console.log(`Updated contact for ${anonKey}`);
-  return {
-    avatarUrl: contact.avatarUrl || null,
-    contactUrl: contact.contactUrl || null,
-    email: contact.email || null,
-    firstName: contact.firstName || null,
-    id: contact.id || id,
-    lastName: contact.lastName || null,
-    name: contact.name || null,
-    organization: contact.organization || null,
-    phoneNumbers: contact.phoneNumbers
-  };
 };
 
-export const deleteContact = async ({ apiKey }, id) => {
+export const updateContact = async (
+  { apiKey }: Config,
+  id: string,
+  contact: ContactUpdate
+): Promise<Contact> => {
+  const anonKey = anonymizeKey(apiKey);
+
+  try {
+    const client = await createClient(apiKey);
+    const hubspotContact = await client.contacts.update(id, convertToHubspotContact(contact));
+    return convertToClinqContact(hubspotContact);
+  } catch (error) {
+    // tslint:disable-next-line:no-console
+    console.error(`Could not update contact for key "${anonKey}: ${error.message}"`);
+    throw new ServerError(400, "Could not update contact");
+  }
+};
+
+export const deleteContact = async ({ apiKey }: Config, id: string) => {
   const anonKey = anonymizeKey(apiKey);
 
   try {
@@ -107,9 +83,7 @@ export const deleteContact = async ({ apiKey }, id) => {
     await client.contacts.delete(id);
   } catch (error) {
     // tslint:disable-next-line:no-console
-    console.error(
-      `Could not delete contact for key "${anonKey}: ${error.message}"`
-    );
+    console.error(`Could not delete contact for key "${anonKey}: ${error.message}"`);
     throw new ServerError(404, "Could not delete contact");
   }
   // tslint:disable-next-line:no-console
@@ -147,18 +121,16 @@ export const handleOAuth2Callback = async (req: Request): Promise<Config> => {
   };
 };
 
-const getContactsPage = async (apiKey, client, page, accumulated) => {
+const getContactsPage = async (
+  apiKey: string,
+  client: Hubspot,
+  page: number,
+  accumulated: Contact[]
+): Promise<Contact[]> => {
   const anonKey = anonymizeKey(apiKey);
   const options = {
     count: 100,
-    property: [
-      "phone",
-      "mobilephone",
-      "firstname",
-      "lastname",
-      "email",
-      "company"
-    ],
+    property: ["phone", "mobilephone", "firstname", "lastname", "email", "company"],
     vidOffset: page
   };
   const data = await client.contacts.get(options);

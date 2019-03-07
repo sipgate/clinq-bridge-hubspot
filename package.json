@@ -18,7 +18,7 @@
   "scripts": {
     "postinstall": "tsc",
     "compile": "tsc",
-    "start": "node dist/index",
+    "start": "ts-node src/index",
     "watch": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "lint": "tslint --project tsconfig.json"
   },

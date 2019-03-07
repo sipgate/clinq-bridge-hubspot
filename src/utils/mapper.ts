@@ -1,4 +1,4 @@
-import { PhoneNumberLabel } from "@clinq/bridge";
+import { Contact, ContactTemplate, PhoneNumber, PhoneNumberLabel } from "@clinq/bridge";
 
 export const convertToHubspotContact = ({
   firstName: firstname,
@@ -6,10 +6,8 @@ export const convertToHubspotContact = ({
   email,
   organization,
   phoneNumbers
-}) => {
-  const phone = phoneNumbers.filter(
-    phoneNumber => phoneNumber.label === PhoneNumberLabel.WORK
-  );
+}: Contact | ContactTemplate) => {
+  const phone = phoneNumbers.filter(phoneNumber => phoneNumber.label === PhoneNumberLabel.WORK);
   const mobilephone = phoneNumbers.filter(
     phoneNumber => phoneNumber.label === PhoneNumberLabel.MOBILE
   );
@@ -44,27 +42,21 @@ export const convertToHubspotContact = ({
   };
 
   if (!phone && !mobilephone) {
-    contact.properties = contact.properties.filter(
-      prop => prop.property !== "phone"
-    );
+    contact.properties = contact.properties.filter(prop => prop.property !== "phone");
     contact.properties.push({
       property: "phone",
       value: phoneNumbers[0].phoneNumber
     });
   } else {
     if (phone.length) {
-      contact.properties = contact.properties.filter(
-        prop => prop.property !== "phone"
-      );
+      contact.properties = contact.properties.filter(prop => prop.property !== "phone");
       contact.properties.push({
         property: "phone",
         value: phone[0].phoneNumber
       });
     }
     if (mobilephone.length) {
-      contact.properties = contact.properties.filter(
-        prop => prop.property !== "mobilephone"
-      );
+      contact.properties = contact.properties.filter(prop => prop.property !== "mobilephone");
       contact.properties.push({
         property: "mobilephone",
         value: mobilephone[0].phoneNumber
@@ -74,23 +66,23 @@ export const convertToHubspotContact = ({
   return contact;
 };
 
-export const convertToClinqContact = contact => {
-  const phoneNumbers = [];
+export const convertToClinqContact = (contact: any) => {
+  const phoneNumbers: PhoneNumber[] = [];
 
-  const landlinePhoneNumber = parsePhoneNumber(
-    PhoneNumberLabel.WORK,
-    contact.properties.phone
-  );
+  const landlinePhoneNumber = getFieldValue(contact.properties.phone);
   if (landlinePhoneNumber) {
-    phoneNumbers.push(landlinePhoneNumber);
+    phoneNumbers.push({
+      label: PhoneNumberLabel.WORK,
+      phoneNumber: landlinePhoneNumber
+    });
   }
 
-  const mobilePhoneNumber = parsePhoneNumber(
-    PhoneNumberLabel.MOBILE,
-    contact.properties.mobilephone
-  );
+  const mobilePhoneNumber = getFieldValue(contact.properties.mobilephone);
   if (mobilePhoneNumber) {
-    phoneNumbers.push(mobilePhoneNumber);
+    phoneNumbers.push({
+      label: PhoneNumberLabel.MOBILE,
+      phoneNumber: mobilePhoneNumber
+    });
   }
 
   const firstName = getFieldValue(contact.properties.firstname);
@@ -109,30 +101,4 @@ export const convertToClinqContact = contact => {
   };
 };
 
-const getFieldValue = field => (field && field.value ? field.value : null);
-
-const createNormalizedPhoneNumber = raw => {
-  if (!raw.match(/[0-9]/)) {
-    throw new Error("Not a valid phone number");
-  }
-  return raw
-    .replace(/[^0-9\+]/gi, "")
-    .replace(/^00/, "")
-    .replace(/^\+/, "")
-    .replace(/^0/, "49");
-};
-
-const parsePhoneNumber = (label, phoneField) => {
-  const value = getFieldValue(phoneField);
-  if (value) {
-    try {
-      const phoneNumber = createNormalizedPhoneNumber(value);
-      return { label, phoneNumber };
-    } catch (e) {
-      // tslint:disable-next-line:no-console
-      console.log("Invalid phone number: " + value);
-      return null;
-    }
-  }
-  return null;
-};
+const getFieldValue = (field: any) => (field && field.value ? field.value : null);
