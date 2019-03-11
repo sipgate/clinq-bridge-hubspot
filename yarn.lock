@@ -9,10 +9,10 @@
   dependencies:
     regenerator-runtime "^0.12.0"
 
-"@clinq/bridge@^7.7.1":
-  version "7.7.1"
-  resolved "https://registry.yarnpkg.com/@clinq/bridge/-/bridge-7.7.1.tgz#afdf629698884a0289b3eee746d7190a73f99b60"
-  integrity sha512-wfXD2fc5mt/MQbUsOmnDOMyanHfwbNjcWy875K7CMgtHhjgoTOIgJjGTUzi8jIds10aOlfhUTN1UxDUEae+LqQ==
+"@clinq/bridge@^7.8.1":
+  version "7.8.1"
+  resolved "https://registry.yarnpkg.com/@clinq/bridge/-/bridge-7.8.1.tgz#0acc9fada5a28c23059abc2c87bb868c1e8c5ebd"
+  integrity sha512-tU98uI/C7f75Yo54lyfbjyKoB9KfCg5TfZoCN6VPoGRweX2UJFAkqDkuLbp7ggG7ZMA9Yqz7eIGgLMlDXUzPcw==
   dependencies:
     ajv "^6.1.1"
     axios "^0.18.0"

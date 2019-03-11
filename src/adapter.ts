@@ -1,4 +1,5 @@
 import {
+  CallEvent,
   Config,
   Contact,
   ContactTemplate,
@@ -9,6 +10,7 @@ import { Request } from "express";
 import Hubspot from "hubspot";
 import {
   anonymizeKey,
+  convertCallStateToDisposition,
   convertToClinqContact,
   convertToHubspotContact,
   parseEnvironment
@@ -98,6 +100,39 @@ export const deleteContact = async ({ apiKey }: Config, id: string) => {
     throw new ServerError(404, "Could not delete contact");
   }
   console.log(`Deleted contact for ${anonKey}`);
+};
+
+export const handleCallEvent = async ({ apiKey }: Config, event: CallEvent) => {
+  const anonKey = anonymizeKey(apiKey);
+
+  try {
+    const client = await createClient(apiKey);
+    await client.engagements.create({
+      associations: {
+        contactIds: [42619003] // TODO find contact by phone number
+      },
+      engagement: {
+        active: true,
+        ownerId: 18193723, // TODO find myself
+        timestamp: event.start,
+        type: "CALL"
+      },
+      metadata: {
+        body: "", // TODO
+        duration: event.duration * 1000,
+        externalId: event.id,
+        fromNumber: event.from,
+        status: convertCallStateToDisposition(event.state),
+        toNumber: event.to
+      }
+    });
+  } catch (error) {
+    console.error(
+      `Could not create engagement for key "${anonKey}: ${error.message}"`
+    );
+    throw new ServerError(404, "Could not delete contact");
+  }
+  console.log(`Created engagement for key ${anonKey}`);
 };
 
 export const getOAuth2RedirectUrl = () => {
