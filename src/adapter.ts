@@ -1,4 +1,5 @@
 import {
+  CallDirection,
   CallEvent,
   Config,
   Contact,
@@ -6,6 +7,7 @@ import {
   ContactUpdate,
   ServerError
 } from "@clinq/bridge";
+import axios from "axios";
 import { Request } from "express";
 import Hubspot from "hubspot";
 import {
@@ -107,13 +109,38 @@ export const handleCallEvent = async ({ apiKey }: Config, event: CallEvent) => {
 
   try {
     const client = await createClient(apiKey);
+
+    const [accessToken, _] = apiKey.split(":");
+
+    // Get the email address of the current user
+    const {
+      data: { user_id }
+    } = await axios.get<{ user_id: string }>(
+      `https://api.hubapi.com/oauth/v1/access-tokens/${accessToken}`
+    );
+
+    // find contact by phone number
+    const query = event.direction === CallDirection.IN ? event.from : event.to;
+
+    // query is a string
+    const { contacts } = await client.contacts.search(query);
+
+    if (!contacts.length) {
+      throw new Error("Cannot find contact for enagagement");
+    }
+
+    const contactId = contacts[0]["portal-id"];
+
+    console.log("Adding engagement to contact", contactId);
+
     await client.engagements.create({
       associations: {
-        contactIds: [42619003] // TODO find contact by phone number
+        contactIds: [contactId]
       },
       engagement: {
         active: true,
-        ownerId: 18193723, // TODO find myself
+        // ownerId: 18193723, // TODO find myself
+        ownerId: user_id,
         timestamp: event.start,
         type: "CALL"
       },
@@ -130,7 +157,7 @@ export const handleCallEvent = async ({ apiKey }: Config, event: CallEvent) => {
     console.error(
       `Could not create engagement for key "${anonKey}: ${error.message}"`
     );
-    throw new ServerError(404, "Could not delete contact");
+    throw new ServerError(404, "Could not create engagement");
   }
   console.log(`Created engagement for key ${anonKey}`);
 };
