@@ -4,7 +4,8 @@ import {
   Contact,
   ContactTemplate,
   ContactUpdate,
-  ServerError
+  ServerError,
+  CallDirection
 } from "@clinq/bridge";
 import { Request } from "express";
 import Hubspot from "hubspot";
@@ -107,6 +108,17 @@ export const handleCallEvent = async ({ apiKey }: Config, event: CallEvent) => {
 
   try {
     const client = await createClient(apiKey);
+
+    console.log("event", event);
+
+    const query = event.direction === CallDirection.IN ? event.from : event.to;
+
+    const contacts = await client.contacts.search(query);
+
+    console.log({
+      contacts
+    })
+
     await client.engagements.create({
       associations: {
         contactIds: [42619003] // TODO find contact by phone number
@@ -130,7 +142,7 @@ export const handleCallEvent = async ({ apiKey }: Config, event: CallEvent) => {
     console.error(
       `Could not create engagement for key "${anonKey}: ${error.message}"`
     );
-    throw new ServerError(404, "Could not delete contact");
+    throw new ServerError(404, "Could not create engagement");
   }
   console.log(`Created engagement for key ${anonKey}`);
 };
