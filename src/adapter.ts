@@ -1,4 +1,5 @@
 import {
+  CallEvent,
   Config,
   Contact,
   ContactTemplate,
@@ -6,167 +7,77 @@ import {
   ServerError
 } from "@clinq/bridge";
 import { Request } from "express";
-import Hubspot from "hubspot";
 import {
-  anonymizeKey,
-  convertToClinqContact,
-  convertToHubspotContact,
-  parseEnvironment
-} from "./utils";
+  createCallEvent,
+  createHubspotContact,
+  deleteHubspotContact,
+  getHubspotContacts,
+  getHubspotOAuth2RedirectUrl,
+  handleHubspotOAuth2Callback,
+  updateHubspotContact
+} from "./hubspot";
+import { convertToClinqContact, errorLogger, infoLogger } from "./utils";
 
-const { clientId, clientSecret, redirectUrl } = parseEnvironment();
-
-export const createClient = async (apiKey: string) => {
-  const [accessToken, refreshToken] = apiKey.split(":");
-
-  if (refreshToken) {
-    const client: any = new Hubspot({
-      // TODO
-      // Remove ts-ignore after https://github.com/MadKudu/node-hubspot/issues/159 has been resolved
-      // @ts-ignore
-      clientId,
-      clientSecret,
-      redirectUri: redirectUrl,
-      refreshToken
-    });
-
-    await client.refreshAccessToken();
-
-    return client;
+export const getContacts = async (config: Config) => {
+  try {
+    return getHubspotContacts(config, 0);
+  } catch (error) {
+    errorLogger(config, `Could not get contacts: ${error.message}"`);
+    throw new ServerError(500, "Could not get contacts");
   }
-
-  return new Hubspot({ apiKey: accessToken });
-};
-
-export const getContacts = async ({ apiKey }: Config) => {
-  const client = await createClient(apiKey);
-  return getContactsPage(apiKey, client, 0, []);
 };
 
 export const createContact = async (
-  { apiKey }: Config,
+  config: Config,
   contact: ContactTemplate
 ): Promise<Contact> => {
-  const anonKey = anonymizeKey(apiKey);
-
   try {
-    const client = await createClient(apiKey);
-    const hubspotContact = await client.contacts.create(
-      convertToHubspotContact(contact)
-    );
-    const convertedContact: Contact = convertToClinqContact(hubspotContact);
-    console.log(`Created contact for ${anonKey}`);
+    const hubspotContact = await createHubspotContact(config, contact);
+    const convertedContact = convertToClinqContact(hubspotContact);
+    infoLogger(config, `Created contact ${convertedContact.id}`);
     return convertedContact;
   } catch (error) {
-    console.error(
-      `Could not create contact for key "${anonKey}: ${error.message}"`
-    );
-    throw new ServerError(400, "Could not create contact");
+    errorLogger(config, `Could not create: ${error.message}"`);
+    throw new ServerError(500, "Could not create contact");
   }
 };
 
 export const updateContact = async (
-  { apiKey }: Config,
+  config: Config,
   id: string,
   contact: ContactUpdate
 ): Promise<Contact> => {
-  const anonKey = anonymizeKey(apiKey);
-
   try {
-    const client = await createClient(apiKey);
-    await client.contacts.update(id, convertToHubspotContact(contact));
-    const hubspotContact = await client.contacts.getById(id);
+    const hubspotContact = await updateHubspotContact(config, id, contact);
     return convertToClinqContact(hubspotContact);
   } catch (error) {
-    console.error(
-      `Could not update contact for key "${anonKey}: ${error.message}"`
-    );
-    throw new ServerError(400, "Could not update contact");
+    errorLogger(config, `Could not update contact: ${error.message}"`);
+    throw new ServerError(500, "Could not update contact");
   }
 };
 
-export const deleteContact = async ({ apiKey }: Config, id: string) => {
-  const anonKey = anonymizeKey(apiKey);
-
+export const deleteContact = async (config: Config, id: string) => {
   try {
-    const client = await createClient(apiKey);
-    await client.contacts.delete(id);
+    await deleteHubspotContact(config, id);
   } catch (error) {
-    console.error(
-      `Could not delete contact for key "${anonKey}: ${error.message}"`
-    );
-    throw new ServerError(404, "Could not delete contact");
+    errorLogger(config, `Could not delete contact: ${error.message}"`);
+    throw new ServerError(500, "Could not delete contact");
   }
-  console.log(`Deleted contact for ${anonKey}`);
+  infoLogger(config, `Deleted contact ${id}`);
 };
 
-export const getOAuth2RedirectUrl = () => {
-  return new Hubspot({
-    // TODO
-    // Remove ts-ignore after https://github.com/MadKudu/node-hubspot/issues/159 has been resolved
-    // @ts-ignore
-    clientId,
-    clientSecret,
-    redirectUri: redirectUrl
-  }).oauth.getAuthorizationUrl({ scopes: "contacts" });
-};
-
-export const handleOAuth2Callback = async (req: Request): Promise<Config> => {
-  const { code } = req.query;
-
-  const tokens = await new Hubspot({
-    // TODO
-    // Remove ts-ignore after https://github.com/MadKudu/node-hubspot/issues/159 has been resolved
-    // @ts-ignore
-    clientId,
-    clientSecret,
-    redirectUri: redirectUrl
-  }).oauth.getAccessToken({
-    code
-  });
-
-  return {
-    apiKey: `${tokens.access_token}:${tokens.refresh_token}`,
-    apiUrl: ""
-  };
-};
-
-const getContactsPage = async (
-  apiKey: string,
-  client: Hubspot,
-  page: number,
-  accumulated: Contact[]
-): Promise<Contact[]> => {
-  const anonKey = anonymizeKey(apiKey);
-  const options = {
-    count: 100,
-    property: [
-      "phone",
-      "mobilephone",
-      "firstname",
-      "lastname",
-      "email",
-      "company"
-    ],
-    vidOffset: page
-  };
-  const data = await client.contacts.get(options);
-
-  const contacts = data.contacts.map(convertToClinqContact);
-  const more = Boolean(data["has-more"]);
-  let nextPage = Number(data["vid-offset"]);
-
-  if (!nextPage) {
-    nextPage++;
+export const handleCallEvent = async (config: Config, event: CallEvent) => {
+  try {
+    await createCallEvent(config, event);
+  } catch (error) {
+    errorLogger(config, `Could not create call event: ${error.message}"`);
+    throw new ServerError(500, "Could not create call event");
   }
-
-  const mergedContacts = [...accumulated, ...contacts];
-
-  console.log(`Fetched ${mergedContacts.length} contacts for key ${anonKey}`);
-
-  if (more) {
-    return getContactsPage(apiKey, client, nextPage, mergedContacts);
-  } else {
-    return mergedContacts;
-  }
+  infoLogger(config, `Created call event for ${event.id}`);
 };
+
+export const getOAuth2RedirectUrl = getHubspotOAuth2RedirectUrl;
+
+export const handleOAuth2Callback = async ({
+  query: { code }
+}: Request): Promise<Config> => handleHubspotOAuth2Callback(code);

@@ -4,6 +4,7 @@ import {
   deleteContact,
   getContacts,
   getOAuth2RedirectUrl,
+  handleCallEvent,
   handleOAuth2Callback,
   updateContact
 } from "./adapter";
@@ -13,6 +14,7 @@ const adapter: Adapter = {
   deleteContact,
   getContacts,
   getOAuth2RedirectUrl,
+  handleCallEvent,
   handleOAuth2Callback,
   updateContact
 };
