@@ -100,7 +100,7 @@ export const convertToHubspotContact = ({
   return contact;
 };
 
-export const convertToClinqContact = (contact: any) => {
+export const convertToClinqContact = (contact: any): Contact => {
   const phoneNumbers: PhoneNumber[] = [];
 
   const landlinePhoneNumber = getFieldValue(contact.properties.phone);

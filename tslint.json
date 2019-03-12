@@ -1,7 +1,6 @@
 {
   "extends": ["tslint:latest", "tslint-eslint-rules", "tslint-config-prettier"],
   "rules": {
-    "interface-name": false,
-    "no-console": false
+    "interface-name": false
   }
 }
