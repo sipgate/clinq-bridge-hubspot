@@ -13,7 +13,8 @@ import {
   convertToClinqContact,
   convertToHubspotContact,
   infoLogger,
-  parseEnvironment
+  parseEnvironment,
+  parsePhoneNumber
 } from "./utils";
 
 const { clientId, clientSecret, redirectUrl } = parseEnvironment();
@@ -171,7 +172,17 @@ const getContactByPhoneNumber = async (
   phoneNumber: string
 ) => {
   const client = await createClient(apiKey);
-  const { contacts } = await client.contacts.search(phoneNumber);
+
+  const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
+  const byOriginal = client.contacts.search(phoneNumber);
+  const byLocal = client.contacts.search(parsedPhoneNumber.localized);
+  const byE164 = client.contacts.search(parsedPhoneNumber.e164);
+
+  const results = await Promise.all([byOriginal, byLocal, byE164]);
+
+  const contacts = results
+    .map(result => result.contacts || [])
+    .find(array => array.length > 0);
 
   if (!contacts.length) {
     throw new Error(`Cannot find contact for phone number ${phoneNumber}`);
