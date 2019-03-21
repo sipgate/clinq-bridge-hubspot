@@ -9,13 +9,15 @@ import {
 import axios from "axios";
 import Hubspot from "hubspot";
 import {
-  convertCallStateToDisposition as mapCallStateToDisposition,
   convertToClinqContact,
   convertToHubspotContact,
   infoLogger,
   parseEnvironment,
   parsePhoneNumber
 } from "./utils";
+
+// https://developers.hubspot.com/docs/methods/engagements/get-call-dispositions
+const CALL_DISPOSITION_HANGUP = "f240bbac-87c9-4f6e-bf70-924b57d47db7";
 
 const { clientId, clientSecret, redirectUrl } = parseEnvironment();
 
@@ -198,11 +200,10 @@ const createCallEngagement = async (
   {
     id: externalId,
     start: timestamp,
-    duration,
-    direction,
     from: fromNumber,
     to: toNumber,
-    state
+    end,
+    start
   }: CallEvent
 ) => {
   const client = await createClient(config.apiKey);
@@ -218,11 +219,11 @@ const createCallEngagement = async (
     },
     metadata: {
       body: "",
-      disposition: mapCallStateToDisposition(state),
-      durationMilliseconds: duration * 1000,
+      disposition: CALL_DISPOSITION_HANGUP,
+      durationMilliseconds: (end - start) * 1000,
       externalId,
-      fromNumber: direction === CallDirection.OUT ? fromNumber : toNumber,
-      toNumber: direction === CallDirection.OUT ? toNumber : fromNumber
+      fromNumber,
+      toNumber
     }
   });
 };
