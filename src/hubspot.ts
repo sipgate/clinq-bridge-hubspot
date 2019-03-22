@@ -197,14 +197,7 @@ const createCallEngagement = async (
   config: Config,
   contactId: string,
   ownerId: string,
-  {
-    id: externalId,
-    start: timestamp,
-    from: fromNumber,
-    to: toNumber,
-    end,
-    start
-  }: CallEvent
+  { id: externalId, from: fromNumber, to: toNumber, end, start }: CallEvent
 ) => {
   const client = await createClient(config.apiKey);
   return client.engagements.create({
@@ -214,7 +207,7 @@ const createCallEngagement = async (
     engagement: {
       active: true,
       ownerId,
-      timestamp,
+      timestamp: start * 1000,
       type: "CALL"
     },
     metadata: {
