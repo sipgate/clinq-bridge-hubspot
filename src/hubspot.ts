@@ -220,7 +220,7 @@ const createCallEngagement = async (
     metadata: {
       body: "",
       disposition: CALL_DISPOSITION_HANGUP,
-      durationMilliseconds: (end - start) * 1000,
+      durationMilliseconds: end - start,
       externalId,
       fromNumber,
       toNumber
