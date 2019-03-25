@@ -16,6 +16,11 @@ import {
   parsePhoneNumber
 } from "./utils";
 
+interface CallDispostion {
+  id: string;
+  label: string;
+}
+
 // https://developers.hubspot.com/docs/methods/engagements/get-call-dispositions
 const CALL_DISPOSITION_HANGUP = "f240bbac-87c9-4f6e-bf70-924b57d47db7";
 
@@ -52,14 +57,7 @@ export const getHubspotContacts = async (
 
   const options = {
     count: 100,
-    property: [
-      "phone",
-      "mobilephone",
-      "firstname",
-      "lastname",
-      "email",
-      "company"
-    ],
+    property: ["phone", "mobilephone", "firstname", "lastname", "email", "company"],
     vidOffset: page
   };
   const data = await client.contacts.get(options);
@@ -109,8 +107,7 @@ export const deleteHubspotContact = async ({ apiKey }: Config, id: string) => {
 export const createCallEvent = async (config: Config, event: CallEvent) => {
   const ownerId = await getOwnerId(config);
 
-  const phoneNumber =
-    event.direction === CallDirection.OUT ? event.to : event.from;
+  const phoneNumber = event.direction === CallDirection.OUT ? event.to : event.from;
 
   const contact = await getContactByPhoneNumber(config, phoneNumber);
 
@@ -132,9 +129,7 @@ export const getHubspotOAuth2RedirectUrl = () => {
   }).oauth.getAuthorizationUrl({ scopes: "contacts" });
 };
 
-export const handleHubspotOAuth2Callback = async (
-  code: string
-): Promise<Config> => {
+export const handleHubspotOAuth2Callback = async (code: string): Promise<Config> => {
   const tokens = await new Hubspot({
     // TODO
     // Remove ts-ignore after https://github.com/MadKudu/node-hubspot/issues/159 has been resolved
@@ -169,10 +164,7 @@ const getOwnerId = async ({ apiKey }: Config) => {
   return owners[0].ownerId;
 };
 
-const getContactByPhoneNumber = async (
-  { apiKey }: Config,
-  phoneNumber: string
-) => {
+const getContactByPhoneNumber = async ({ apiKey }: Config, phoneNumber: string) => {
   const client = await createClient(apiKey);
 
   const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
@@ -182,9 +174,7 @@ const getContactByPhoneNumber = async (
 
   const results = await Promise.all([byOriginal, byLocal, byE164]);
 
-  const contacts = results
-    .map(result => result.contacts || [])
-    .find(array => array.length > 0);
+  const contacts = results.map(result => result.contacts || []).find(array => array.length > 0);
 
   if (!contacts.length) {
     throw new Error(`Cannot find contact for phone number ${phoneNumber}`);
@@ -197,16 +187,14 @@ const createCallEngagement = async (
   config: Config,
   contactId: string,
   ownerId: string,
-  {
-    id: externalId,
-    from: fromNumber,
-    to: toNumber,
-    end,
-    start,
-    start: timestamp
-  }: CallEvent
+  { id: externalId, from: fromNumber, to: toNumber, end, start, start: timestamp }: CallEvent
 ) => {
   const client = await createClient(config.apiKey);
+  const dispositions: CallDispostion[] = await client.engagements.getCallDispositions();
+  const disposition = dispositions
+    .filter(entry => entry.label === "Connected")
+    .map(entry => entry.id)
+    .find(Boolean);
   return client.engagements.create({
     associations: {
       contactIds: [contactId]
@@ -219,11 +207,12 @@ const createCallEngagement = async (
     },
     metadata: {
       body: "",
-      disposition: CALL_DISPOSITION_HANGUP,
+      disposition: disposition ? disposition : CALL_DISPOSITION_HANGUP,
       durationMilliseconds: end - start,
       externalId,
       fromNumber,
-      toNumber
+      status: "COMPLETED",
+      toNumber,
     }
   });
 };
