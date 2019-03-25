@@ -174,13 +174,16 @@ const getContactByPhoneNumber = async ({ apiKey }: Config, phoneNumber: string) 
 
   const results = await Promise.all([byOriginal, byLocal, byE164]);
 
-  const contacts = results.map(result => result.contacts || []).find(array => array.length > 0);
+  const result = results
+    .map(({ contacts }) => contacts)
+    .filter(contacts => Array.isArray(contacts) && contacts.length > 0)
+    .find(Boolean);
 
-  if (!contacts.length) {
+  if (!result) {
     throw new Error(`Cannot find contact for phone number ${phoneNumber}`);
   }
 
-  return contacts[0];
+  return result[0];
 };
 
 const createCallEngagement = async (
@@ -212,7 +215,7 @@ const createCallEngagement = async (
       externalId,
       fromNumber,
       status: "COMPLETED",
-      toNumber,
+      toNumber
     }
   });
 };
