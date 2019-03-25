@@ -12,6 +12,7 @@ import {
   convertToClinqContact,
   convertToHubspotContact,
   infoLogger,
+  normalizePhoneNumber,
   parseEnvironment,
   parsePhoneNumber
 } from "./utils";
@@ -168,11 +169,21 @@ const getContactByPhoneNumber = async ({ apiKey }: Config, phoneNumber: string) 
   const client = await createClient(apiKey);
 
   const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
-  const byOriginal = client.contacts.search(phoneNumber);
-  const byLocal = client.contacts.search(parsedPhoneNumber.localized);
-  const byE164 = client.contacts.search(parsedPhoneNumber.e164);
+  const originalQuery = client.contacts.search(phoneNumber);
+  const localizedQuery = client.contacts.search(parsedPhoneNumber.localized);
+  const localizedQueryNormalized = client.contacts.search(
+    normalizePhoneNumber(parsedPhoneNumber.localized)
+  );
+  const e164Query = client.contacts.search(parsedPhoneNumber.e164);
+  const e164QueryNormalized = client.contacts.search(normalizePhoneNumber(parsedPhoneNumber.e164));
 
-  const results = await Promise.all([byOriginal, byLocal, byE164]);
+  const results = await Promise.all([
+    originalQuery,
+    localizedQuery,
+    localizedQueryNormalized,
+    e164Query,
+    e164QueryNormalized
+  ]);
 
   const result = results
     .map(({ contacts }) => contacts)
