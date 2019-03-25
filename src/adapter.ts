@@ -59,21 +59,21 @@ export const updateContact = async (
 export const deleteContact = async (config: Config, id: string) => {
   try {
     await deleteHubspotContact(config, id);
+    infoLogger(config, `Deleted contact ${id}`);
   } catch (error) {
     errorLogger(config, `Could not delete contact: ${error.message}"`);
     throw new ServerError(500, "Could not delete contact");
   }
-  infoLogger(config, `Deleted contact ${id}`);
 };
 
 export const handleCallEvent = async (config: Config, event: CallEvent) => {
   try {
     await createCallEvent(config, event);
+    infoLogger(config, `Created call event for ${event.id}`);
   } catch (error) {
     errorLogger(config, `Could not create call event: ${error.message}"`);
     throw new ServerError(500, "Could not create call event");
   }
-  infoLogger(config, `Created call event for ${event.id}`);
 };
 
 export const getOAuth2RedirectUrl = getHubspotOAuth2RedirectUrl;
