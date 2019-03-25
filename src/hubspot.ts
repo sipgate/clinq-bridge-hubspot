@@ -25,7 +25,7 @@ export const createClient = async (apiKey: string) => {
   const [accessToken, refreshToken] = apiKey.split(":");
 
   if (refreshToken) {
-    const client: any = new Hubspot({
+    const client = new Hubspot({
       // TODO
       // Remove ts-ignore after https://github.com/MadKudu/node-hubspot/issues/159 has been resolved
       // @ts-ignore
@@ -47,7 +47,7 @@ export const getHubspotContacts = async (
   config: Config,
   page: number,
   accumulated: Contact[] = []
-) => {
+): Promise<Contact[]> => {
   const client = await createClient(config.apiKey);
 
   const options = {
