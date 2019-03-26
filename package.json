@@ -21,14 +21,14 @@
     "lint": "tslint --project tsconfig.json"
   },
   "dependencies": {
-    "@clinq/bridge": "^9.0.0",
+    "@clinq/bridge": "^9.0.2",
     "@types/express": "^4.16.1",
-    "@types/node": "^11.11.1",
+    "@types/node": "^11.11.7",
     "axios": "^0.18.0",
     "express": "^4.16.4",
     "google-libphonenumber": "^3.2.2",
     "hubspot": "^2.1.1",
-    "typescript": "^3.3.3333"
+    "typescript": "^3.3.4000"
   },
   "devDependencies": {
     "@types/google-libphonenumber": "^7.4.17",
@@ -38,7 +38,7 @@
     "lint-staged": "^8.1.5",
     "prettier": "^1.16.4",
     "ts-node-dev": "^1.0.0-pre.32",
-    "tslint": "^5.13.1",
+    "tslint": "^5.14.0",
     "tslint-config-prettier": "^1.18.0",
     "tslint-eslint-rules": "^5.4.0"
   },
