@@ -9,14 +9,15 @@
   dependencies:
     regenerator-runtime "^0.12.0"
 
-"@clinq/bridge@^9.0.2":
-  version "9.0.2"
-  resolved "https://registry.yarnpkg.com/@clinq/bridge/-/bridge-9.0.2.tgz#43dec63e92cc10f9f3c2ca1dca370a6507d3aff1"
-  integrity sha512-YChgFouuemEhR3ZE8DZiDRIDBt2hDAsdI0c8QKLtL2EOU3+JLxjKnA33RvPff4DC7FSD+uj+vz0ueJdSzDbsig==
+"@clinq/bridge@^9.0.3":
+  version "9.0.3"
+  resolved "https://registry.yarnpkg.com/@clinq/bridge/-/bridge-9.0.3.tgz#0a54ab594ded96d7c4b3607b918211e868861a66"
+  integrity sha512-RQorsbvykgofedKxmSp30V+ey+ZTJh6e6/oIbNkrZCMqZWN94lMktmLHP1ioFd6YHgct4583tpUKqhCoYNlIMQ==
   dependencies:
     ajv "^6.1.1"
     axios "^0.18.0"
     body-parser "^1.18.3"
+    compression "^1.7.4"
     cookie-parser "^1.4.3"
     cors "^2.8.4"
     express "^4.16.2"
@@ -576,6 +577,26 @@ component-emitter@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/component-emitter/-/component-emitter-1.2.1.tgz#137918d6d78283f7df7a6b7c5a63e140e69425e6"
   integrity sha1-E3kY1teCg/ffemt8WmPhQOaUJeY=
+
+compressible@~2.0.16:
+  version "2.0.16"
+  resolved "https://registry.yarnpkg.com/compressible/-/compressible-2.0.16.tgz#a49bf9858f3821b64ce1be0296afc7380466a77f"
+  integrity sha512-JQfEOdnI7dASwCuSPWIeVYwc/zMsu/+tRhoUvEfXz2gxOA2DNjmG5vhtFdBlhWPPGo+RdT9S3tgc/uH5qgDiiA==
+  dependencies:
+    mime-db ">= 1.38.0 < 2"
+
+compression@^1.7.4:
+  version "1.7.4"
+  resolved "https://registry.yarnpkg.com/compression/-/compression-1.7.4.tgz#95523eff170ca57c29a0ca41e6fe131f41e5bb8f"
+  integrity sha512-jaSIDzP9pZVS4ZfQ+TzvtiWhdpFhE2RDHz8QJkpX9SIpLq88VueF5jJw6t+6CUQcAoA6t+x89MLrWAqpfDE8iQ==
+  dependencies:
+    accepts "~1.3.5"
+    bytes "3.0.0"
+    compressible "~2.0.16"
+    debug "2.6.9"
+    on-headers "~1.0.2"
+    safe-buffer "5.1.2"
+    vary "~1.1.2"
 
 concat-map@0.0.1:
   version "0.0.1"
@@ -1946,7 +1967,7 @@ micromatch@^3.1.8:
     snapdragon "^0.8.1"
     to-regex "^3.0.2"
 
-mime-db@~1.38.0:
+"mime-db@>= 1.38.0 < 2", mime-db@~1.38.0:
   version "1.38.0"
   resolved "https://registry.yarnpkg.com/mime-db/-/mime-db-1.38.0.tgz#1a2aab16da9eb167b49c6e4df2d9c68d63d8e2ad"
   integrity sha512-bqVioMFFzc2awcdJZIzR3HjZFX20QhilVS7hytkKrv7xFAn8bM1gzc/FOX2awLISvWe0PV8ptFKcon+wZ5qYkg==
@@ -2134,6 +2155,11 @@ on-finished@~2.3.0:
   integrity sha1-IPEzZIGwg811M3mSoWlxqi2QaUc=
   dependencies:
     ee-first "1.1.1"
+
+on-headers@~1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/on-headers/-/on-headers-1.0.2.tgz#772b0ae6aaa525c399e489adfad90c403eb3c28f"
+  integrity sha512-pZAE+FJLoyITytdqK0U5s+FIpjN0JP3OzFi/u8Rx+EV5/W+JTWGXG8xFzevE7AjBfDqHv/8vL8qQsIhHnqRkrA==
 
 once@^1.3.0, once@^1.3.1, once@^1.4.0:
   version "1.4.0"
