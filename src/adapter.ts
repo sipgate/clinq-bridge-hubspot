@@ -67,11 +67,12 @@ export const deleteContact = async (config: Config, id: string) => {
 };
 
 export const handleCallEvent = async (config: Config, event: CallEvent) => {
+  infoLogger(config, `Creating call event for ${event.id}, user ${event.user.id}`);
   try {
     await createCallEvent(config, event);
-    infoLogger(config, `Created call event for ${event.id}`);
+    infoLogger(config, `Created call event for ${event.id}, user ${event.user.id}`);
   } catch (error) {
-    errorLogger(config, `Could not create call event: ${error.message}"`);
+    errorLogger(config, `Could not create call event: ${error.message}", user ${event.user.id}`);
     throw new ServerError(500, "Could not create call event");
   }
 };
