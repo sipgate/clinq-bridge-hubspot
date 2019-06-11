@@ -12,15 +12,15 @@ const {
 
 export const parseEnvironment = (): OAuth2Options => {
   if (!clientId) {
-    throw new Error("Missing client ID in environment.");
+    throw new Error("Missing HUBSPOT_CLIENT_ID in environment.");
   }
 
   if (!clientSecret) {
-    throw new Error("Missing client secret in environment.");
+    throw new Error("Missing HUBSPOT_CLIENT_SECRET in environment.");
   }
 
   if (!redirectUrl) {
-    throw new Error("Missing redirect URI in environment.");
+    throw new Error("Missing HUBSPOT_REDIRECT_URL in environment.");
   }
 
   return {
