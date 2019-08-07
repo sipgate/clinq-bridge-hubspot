@@ -58,7 +58,14 @@ export const getHubspotContacts = async (
 
   const options = {
     count: 100,
-    property: ["phone", "mobilephone", "firstname", "lastname", "email", "company"],
+    property: [
+      "phone",
+      "mobilephone",
+      "firstname",
+      "lastname",
+      "email",
+      "company"
+    ],
     vidOffset: page
   };
   const data = await client.contacts.get(options);
@@ -108,7 +115,8 @@ export const deleteHubspotContact = async ({ apiKey }: Config, id: string) => {
 export const createCallEvent = async (config: Config, event: CallEvent) => {
   const ownerId = await getOwnerId(config);
 
-  const phoneNumber = event.direction === CallDirection.OUT ? event.to : event.from;
+  const phoneNumber =
+    event.direction === CallDirection.OUT ? event.to : event.from;
 
   const contact = await getContactByPhoneNumber(config, phoneNumber);
 
@@ -130,7 +138,9 @@ export const getHubspotOAuth2RedirectUrl = () => {
   }).oauth.getAuthorizationUrl({ scopes: "contacts" });
 };
 
-export const handleHubspotOAuth2Callback = async (code: string): Promise<Config> => {
+export const handleHubspotOAuth2Callback = async (
+  code: string
+): Promise<{ apiKey: string; apiUrl: string }> => {
   const tokens = await new Hubspot({
     // TODO
     // Remove ts-ignore after https://github.com/MadKudu/node-hubspot/issues/159 has been resolved
@@ -165,7 +175,10 @@ const getOwnerId = async ({ apiKey }: Config) => {
   return owners[0].ownerId;
 };
 
-const getContactByPhoneNumber = async ({ apiKey }: Config, phoneNumber: string) => {
+const getContactByPhoneNumber = async (
+  { apiKey }: Config,
+  phoneNumber: string
+) => {
   const client = await createClient(apiKey);
 
   const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
@@ -175,7 +188,9 @@ const getContactByPhoneNumber = async ({ apiKey }: Config, phoneNumber: string) 
     normalizePhoneNumber(parsedPhoneNumber.localized)
   );
   const e164Query = client.contacts.search(parsedPhoneNumber.e164);
-  const e164QueryNormalized = client.contacts.search(normalizePhoneNumber(parsedPhoneNumber.e164));
+  const e164QueryNormalized = client.contacts.search(
+    normalizePhoneNumber(parsedPhoneNumber.e164)
+  );
 
   const results = await Promise.all([
     originalQuery,
@@ -201,7 +216,14 @@ const createCallEngagement = async (
   config: Config,
   contactId: string,
   ownerId: string,
-  { id: externalId, from: fromNumber, to: toNumber, end, start, start: timestamp }: CallEvent
+  {
+    id: externalId,
+    from: fromNumber,
+    to: toNumber,
+    end,
+    start,
+    start: timestamp
+  }: CallEvent
 ) => {
   const client = await createClient(config.apiKey);
   const dispositions: CallDispostion[] = await client.engagements.getCallDispositions();

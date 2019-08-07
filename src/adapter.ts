@@ -90,4 +90,5 @@ export const getOAuth2RedirectUrl = getHubspotOAuth2RedirectUrl;
 
 export const handleOAuth2Callback = async ({
   query: { code }
-}: Request): Promise<Config> => handleHubspotOAuth2Callback(code);
+}: Request): Promise<{ apiKey: string; apiUrl: string }> =>
+  handleHubspotOAuth2Callback(code);
