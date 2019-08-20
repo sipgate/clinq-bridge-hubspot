@@ -1,4 +1,9 @@
-import { Contact, ContactTemplate, PhoneNumber, PhoneNumberLabel } from "@clinq/bridge";
+import {
+  Contact,
+  ContactTemplate,
+  PhoneNumber,
+  PhoneNumberLabel
+} from "@clinq/bridge";
 
 export const convertToHubspotContact = ({
   firstName: firstname,
@@ -98,7 +103,7 @@ export const convertToClinqContact = (contact: any): Contact => {
 
   return {
     avatarUrl: null,
-    contactUrl: getFieldValue(contact["profile-url"]),
+    contactUrl: contact["profile-url"] || null,
     email: getFieldValue(contact.properties.email),
     firstName,
     id: String(contact.vid),
