@@ -119,6 +119,9 @@ export const createCallEvent = async (config: Config, event: CallEvent) => {
     event.direction === CallDirection.OUT ? event.to : event.from;
 
   const contact = await getContactByPhoneNumber(config, phoneNumber);
+  if (!contact) {
+    return;
+  }
 
   const contactId = contact["canonical-vid"];
 
@@ -206,7 +209,9 @@ const getContactByPhoneNumber = async (
     .find(Boolean);
 
   if (!result) {
-    throw new Error(`Cannot find contact for phone number ${phoneNumber}`);
+    // tslint:disable-next-line: no-console
+    console.warn(`Cannot find contact for phone number ${phoneNumber}`);
+    return;
   }
 
   return result[0];
