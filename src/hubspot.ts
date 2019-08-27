@@ -195,13 +195,15 @@ const getContactByPhoneNumber = async (config: Config, phoneNumber: string) => {
     normalizePhoneNumber(parsedPhoneNumber.e164)
   );
 
-  const results = await Promise.all([
-    originalQuery,
-    localizedQuery,
-    localizedQueryNormalized,
-    e164Query,
-    e164QueryNormalized
-  ]);
+  const results = await Promise.all(
+    [
+      originalQuery,
+      localizedQuery,
+      localizedQueryNormalized,
+      e164Query,
+      e164QueryNormalized
+    ].map(promise => promise.catch(() => ({ contacts: [] })))
+  );
 
   const result = results
     .map(({ contacts }) => contacts)
