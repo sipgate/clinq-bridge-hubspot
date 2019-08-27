@@ -14,7 +14,8 @@ import {
   infoLogger,
   normalizePhoneNumber,
   parseEnvironment,
-  parsePhoneNumber
+  parsePhoneNumber,
+  warnLogger
 } from "./utils";
 
 interface CallDispostion {
@@ -178,11 +179,10 @@ const getOwnerId = async ({ apiKey }: Config) => {
   return owners[0].ownerId;
 };
 
-const getContactByPhoneNumber = async (
-  { apiKey }: Config,
-  phoneNumber: string
-) => {
-  const client = await createClient(apiKey);
+const getContactByPhoneNumber = async (config: Config, phoneNumber: string) => {
+  const client = await createClient(config.apiKey);
+
+  infoLogger(config, `Searching for contact with phone number:`, phoneNumber);
 
   const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
   const originalQuery = client.contacts.search(phoneNumber);
@@ -210,11 +210,14 @@ const getContactByPhoneNumber = async (
 
   if (!result) {
     // tslint:disable-next-line: no-console
-    console.warn(`Cannot find contact for phone number ${phoneNumber}`);
+    warnLogger(config, `Cannot find contact for phone number:`, phoneNumber);
     return;
   }
 
-  return result[0];
+  const contact = result[0];
+  infoLogger(config, `Found contact for phone number:`, phoneNumber);
+
+  return contact;
 };
 
 const createCallEngagement = async (
