@@ -18,7 +18,8 @@
   "scripts": {
     "postinstall": "tsc",
     "start": "env-cmd -f .env ts-node-dev src/index.ts",
-    "lint": "tslint --project tsconfig.json"
+    "lint": "tslint --project tsconfig.json",
+    "format": "prettier --write \"src/**/*.{ts,js,css}\""
   },
   "dependencies": {
     "@clinq/bridge": "^10.1.2",
@@ -29,6 +30,7 @@
     "env-cmd": "^10.1.0",
     "express": "^4.17.1",
     "google-libphonenumber": "^3.2.3",
+    "hubspot": "^2.3.14",
     "typescript": "^3.5.2"
   },
   "devDependencies": {

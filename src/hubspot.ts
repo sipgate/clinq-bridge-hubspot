@@ -1,38 +1,48 @@
-import {
-  Config,
-  Contact
-} from "@clinq/bridge";
+import { CallDirection, CallEvent, Config, Contact, ContactTemplate, ContactUpdate } from "@clinq/bridge";
 import { Client as Hubspot } from "@hubspot/api-client";
+import Axios from "axios";
+import HubspotLegacyClient from "hubspot";
+import { CallDispostion, CALL_DISPOSITION_HANGUP, HubInfo } from "./model";
 import {
+  convertToClinqContact,
+  convertToHubspotContact,
   infoLogger,
-
-  parseEnvironment
+  normalizePhoneNumber,
+  parseEnvironment,
+  parsePhoneNumber,
+  warnLogger
 } from "./utils";
 
-// interface CallDispostion {
-//   id: string;
-//   label: string;
-// }
-
-// // https://developers.hubspot.com/docs/methods/engagements/get-call-dispositions
-// const CALL_DISPOSITION_HANGUP = "f240bbac-87c9-4f6e-bf70-924b57d47db7";
 
 const { clientId, clientSecret, redirectUrl } = parseEnvironment();
 
-const CONTACT_SCOPES = [
-  // "crm.objects.custom.read", 
-  // "crm.objects.custom.write", 
-  "contacts"
-]
+const CONTACT_SCOPES = ["contacts"];
 
-export const createClient = async (apiKey: string) => {
-  const [accessToken, refreshToken] = apiKey.split(":");
-  if (refreshToken) {
-    console.log("Refreshing token")
-    const client = new Hubspot();
+type TokenInfo = {
+  token: string;
+  expiresIn: number;
+  updatedAt: number;
+};
 
+const tokenCache = new Map<string, TokenInfo>();
+
+const isTokenValid = (apiKey: string) => {
+  const tokenInfo = tokenCache.get(apiKey);
+  if (!tokenInfo) {
+    return false;
+  }
+  return Date.now() < tokenInfo.updatedAt + tokenInfo.expiresIn;
+};
+
+export const createClient = async (config: Config) => {
+  const [accessToken, refreshToken] = config.apiKey.split(":");
+  const client = new Hubspot();
+  client.setAccessToken(accessToken);
+
+  if (!isTokenValid(config.apiKey)) {
+    infoLogger(config, `Refreshing access token`);
     const {
-      body: { accessToken },
+      body: { accessToken, expiresIn }
     } = await client.oauth.defaultApi.createToken(
       "refresh_token",
       undefined,
@@ -42,14 +52,18 @@ export const createClient = async (apiKey: string) => {
       refreshToken
     );
 
-    console.log("new access token", accessToken)
-
     client.setAccessToken(accessToken);
+
+    tokenCache.set(config.apiKey, {
+      token: accessToken,
+      expiresIn,
+      updatedAt: Date.now()
+    });
 
     return client;
   }
 
-  return new Hubspot({ accessToken });
+  return client;
 };
 
 export const getHubspotContacts = async (
@@ -57,98 +71,81 @@ export const getHubspotContacts = async (
   after?: string,
   accumulated: Contact[] = []
 ): Promise<Contact[]> => {
-  const client = await createClient(config.apiKey);
+  const client = await createClient(config);
 
-  const properties = [
-    "phone",
-    "mobilephone",
-    "firstname",
-    "lastname",
-    "email",
-    "company",
-  ]
+  const properties = ["phone", "mobilephone", "firstname", "lastname", "email", "company"];
 
-  // const options = {
-  //   count: 100,
-    // property: [
-    //   "phone",
-    //   "mobilephone",
-    //   "firstname",
-    //   "lastname",
-    //   "email",
-    //   "company",
-    // ],
-  //   vidOffset: page,
-  // };
+  const { hub_id } = await getTokenInfo(config);
 
-  try {
-    const contactsResponse = await client.crm.contacts.basicApi.getPage(100, after, properties);
-      // const contacts = data.contacts.map(convertToClinqContact);
-    // const more = Boolean(data["has-more"]);
-    // let nextPage = Number(data["vid-offset"]);
+  await getOwnerId(config)
 
-    const afterToken = contactsResponse.body.paging?.next?.after;
+  const contactsResponse = await client.crm.contacts.basicApi.getPage(100, after, properties);
 
-    const mergedContacts = [...accumulated, ...(contactsResponse.body.results as unknown as Contact[])];
+  const mappedContacts = contactsResponse.body.results.map(c => convertToClinqContact(c, hub_id));
 
-    infoLogger(config, `Fetched ${mergedContacts.length} contacts`);
+  const afterToken = contactsResponse.body.paging?.next?.after;
 
-    if (afterToken) {
-      return getHubspotContacts(config, afterToken, mergedContacts);
-    } else {
-      return mergedContacts;
-    }
-  } catch (error) {
-    console.log("AAAAAAAAAAAAAAAH", JSON.stringify(error.response.body, null,2 ))
-    return []
+  const mergedContacts = [...accumulated, ...mappedContacts];
+
+  infoLogger(config, `Fetched ${mergedContacts.length} contacts`);
+
+  if (afterToken) {
+    return getHubspotContacts(config, afterToken, mergedContacts);
+  } else {
+    return mergedContacts;
   }
 };
 
-// export const createHubspotContact = async (
-//   { apiKey }: Config,
-//   contact: ContactTemplate
-// ): Promise<Contact> => {
-//   const client = await createClient(apiKey);
-//   return client.contacts.create(convertToHubspotContact(contact));
-// };
+export const createHubspotContact = async (
+  config: Config,
+  contact: ContactTemplate
+): Promise<Contact> => {
+  const client = await createClient(config);
+  const hubspotContact = convertToHubspotContact(contact);
+  const { hub_id } = await getTokenInfo(config);
+  const { body } = await client.crm.contacts.basicApi.create(hubspotContact);
+  return convertToClinqContact(body, hub_id);
+};
 
-// export const updateHubspotContact = async (
-//   { apiKey }: Config,
-//   id: string,
-//   contact: ContactUpdate
-// ): Promise<Contact> => {
-//   const client = await createClient(apiKey);
-//   await client.contacts.update(id, convertToHubspotContact(contact));
-//   return client.contacts.getById(id);
-// };
+export const updateHubspotContact = async (
+  config: Config,
+  id: string,
+  contact: ContactUpdate
+): Promise<Contact> => {
+  const client = await createClient(config);
+  const hubspotContact = convertToHubspotContact(contact);
+  const { hub_id } = await getTokenInfo(config);
+  const { body } = await client.crm.contacts.basicApi.update(id, hubspotContact);
+  return convertToClinqContact(body, hub_id);
+};
 
-// export const deleteHubspotContact = async ({ apiKey }: Config, id: string) => {
-//   const client = await createClient(apiKey);
-//   return client.contacts.delete(id);
-// };
+export const archiveHubspotContact = async (config: Config, id: string) => {
+  const client = await createClient(config);
+  return client.crm.contacts.basicApi.archive(id);
+};
 
-// export const createCallEvent = async (config: Config, event: CallEvent) => {
-//   const ownerId = await getOwnerId(config);
+export const createCallEvent = async (config: Config, event: CallEvent) => {
+  const ownerId = await getOwnerId(config);
 
-//   const phoneNumber =
-//     event.direction === CallDirection.OUT ? event.to : event.from;
+  const phoneNumber =
+    event.direction === CallDirection.OUT ? event.to : event.from;
 
-//   const contact = await getContactByPhoneNumber(config, phoneNumber);
-//   if (!contact) {
-//     return;
-//   }
+  const contact = await getContactByPhoneNumber(config, phoneNumber);
+  if (!contact) {
+    return;
+  }
 
-//   const contactId = contact["canonical-vid"];
+  const contactId = contact.id;
 
-//   infoLogger(config, `Adding engagement to contact ${contactId}`);
+  infoLogger(config, `Adding engagement to contact ${contactId}`);
 
-//   return createCallEngagement(config, contactId, ownerId, event);
-// };
+  return createCallEngagement(config, contactId, ownerId, event);
+};
 
 export const getHubspotOAuth2RedirectUrl = () => {
   const client = new Hubspot();
-  const uri = client.oauth.getAuthorizationUrl(clientId, redirectUrl, CONTACT_SCOPES.join(" "))
-  return Promise.resolve(uri)
+  const uri = client.oauth.getAuthorizationUrl(clientId, redirectUrl, CONTACT_SCOPES.join(" "));
+  return Promise.resolve(uri);
 };
 
 export const handleHubspotOAuth2Callback = async (
@@ -156,117 +153,143 @@ export const handleHubspotOAuth2Callback = async (
 ): Promise<{ apiKey: string; apiUrl: string }> => {
   const client = new Hubspot();
 
-  const {body : {accessToken, refreshToken }} = await client.oauth.defaultApi.createToken(
-    'authorization_code',
+  const {
+    body: { accessToken, refreshToken }
+  } = await client.oauth.defaultApi.createToken(
+    "authorization_code",
     code,
     redirectUrl,
     clientId,
-    clientSecret,
-)
+    clientSecret
+  );
 
   return {
     apiKey: `${accessToken}:${refreshToken}`,
-    apiUrl: "",
+    apiUrl: ""
   };
 };
 
-// const getOwnerId = async ({ apiKey }: Config) => {
-//   const client = await createClient(apiKey);
-//   const {
-//     data: { user: email },
-//   } = await axios.get<{ user: string }>(
-//     `https://api.hubapi.com/oauth/v1/access-tokens/${client.accessToken}`
-//   );
+const getTokenInfo = async (config: Config) => {
+  const client = await createClient(config);
+  const accessToken = client.getOptions().accessToken;
+  const { data } = await Axios.get<HubInfo>(
+    `https://api.hubapi.com/oauth/v1/access-tokens/${accessToken}`
+  );
+  console.log("token info", data)
 
-//   const owners = await client.owners.get({ email });
+  return data;
+};
 
-//   if (!owners.length || !owners[0].ownerId) {
-//     throw new Error(`Cannot find owner id for email ${email}`);
-//   }
+const getOwnerId = async  (config: Config) => {
+  const {user: email} = await getTokenInfo(config)
+  const client = await createClient(config);
+  const {body: {results}} = await client.crm.owners.defaultApi.getPage(email)
 
-//   return owners[0].ownerId;
-// };
+  if (!results.length || !results[0].id) {
+    throw new Error(`Cannot find owner id for email ${email}`);
+  }
 
-// const getContactByPhoneNumber = async (config: Config, phoneNumber: string) => {
-//   const client = await createClient(config.apiKey);
+  return results[0].id;
+}
 
-//   infoLogger(config, `Searching for contact with phone number:`, phoneNumber);
+const getContactByPhoneNumber = async (config: Config, phoneNumber: string) => {
+  const client = await createClient(config);
 
-//   const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
-//   const originalQuery = client.contacts.search(phoneNumber);
-//   const localizedQuery = client.contacts.search(parsedPhoneNumber.localized);
-//   const localizedQueryNormalized = client.contacts.search(
-//     normalizePhoneNumber(parsedPhoneNumber.localized)
-//   );
-//   const e164Query = client.contacts.search(parsedPhoneNumber.e164);
-//   const e164QueryNormalized = client.contacts.search(
-//     normalizePhoneNumber(parsedPhoneNumber.e164)
-//   );
+  infoLogger(config, `Searching for contact with phone number:`, phoneNumber);
 
-//   const results = await Promise.all(
-//     [
-//       originalQuery,
-//       localizedQuery,
-//       localizedQueryNormalized,
-//       e164Query,
-//       e164QueryNormalized,
-//     ].map((promise) => promise.catch(() => ({ contacts: [] })))
-//   );
+  const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
 
-//   const result = results
-//     .map(({ contacts }) => contacts)
-//     .filter((contacts) => Array.isArray(contacts) && contacts.length > 0)
-//     .find(Boolean);
+  const searchPromise = (value: string) => client.crm.contacts.searchApi.doSearch({
+    query: value,
+    after: 0,
+    sorts: [],
+    properties: ["mobilephone", "phone"],
+    limit: 20,
+    filterGroups: []
+  })
 
-//   if (!result) {
-//     // tslint:disable-next-line: no-console
-//     warnLogger(config, `Cannot find contact for phone number:`, phoneNumber);
-//     return;
-//   }
+  const originalQuery = searchPromise(phoneNumber);
+  const localizedQuery = searchPromise(parsedPhoneNumber.localized);
+  const localizedQueryNormalized = searchPromise(
+    normalizePhoneNumber(parsedPhoneNumber.localized)
+  );
+  const e164Query = searchPromise(parsedPhoneNumber.e164);
+  const e164QueryNormalized = searchPromise(
+    normalizePhoneNumber(parsedPhoneNumber.e164)
+  );
 
-//   const contact = result[0];
-//   infoLogger(config, `Found contact for phone number:`, phoneNumber);
+  const results = await Promise.all(
+    [
+      originalQuery,
+      localizedQuery,
+      localizedQueryNormalized,
+      e164Query,
+      e164QueryNormalized,
+    ].map((promise) => promise.catch(() => ({ body:{results: []}})))
+  );
 
-//   return contact;
-// };
+  const result = results
+    .map(({body: {results}}) => results)
+    .filter((contacts) => Array.isArray(contacts) && contacts.length > 0)
+    .find(Boolean);
 
-// const createCallEngagement = async (
-//   config: Config,
-//   contactId: string,
-//   ownerId: string,
-//   {
-//     id: externalId,
-//     from: fromNumber,
-//     to: toNumber,
-//     end,
-//     start,
-//     start: timestamp,
-//   }: CallEvent
-// ) => {
-//   const client = await createClient(config.apiKey);
-//   const dispositions: CallDispostion[] = await client.engagements.getCallDispositions();
-//   const disposition = dispositions
-//     .filter((entry) => entry.label === "Connected")
-//     .map((entry) => entry.id)
-//     .find(Boolean);
-//   return client.engagements.create({
-//     associations: {
-//       contactIds: [contactId],
-//     },
-//     engagement: {
-//       active: true,
-//       ownerId,
-//       timestamp,
-//       type: "CALL",
-//     },
-//     metadata: {
-//       body: "",
-//       disposition: disposition ? disposition : CALL_DISPOSITION_HANGUP,
-//       durationMilliseconds: end - start,
-//       externalId,
-//       fromNumber,
-//       status: "COMPLETED",
-//       toNumber,
-//     },
-//   });
-// };
+  if (!result) {
+    // tslint:disable-next-line: no-console
+    warnLogger(config, `Cannot find contact for phone number:`, phoneNumber);
+    return;
+  }
+
+  const contact = result[0];
+  infoLogger(config, `Found contact for phone number:`, phoneNumber);
+
+  return contact;
+};
+
+const createCallEngagement = async (
+  config: Config,
+  contactId: string,
+  ownerId: string,
+  {
+    id: externalId,
+    from: fromNumber,
+    to: toNumber,
+    end,
+    start,
+    start: timestamp,
+  }: CallEvent
+) => {
+  const client = await createClient(config);
+  const accessToken = client.getOptions().accessToken;
+  
+  if(!accessToken) {
+    throw new Error(`No access token found`);
+  }
+  const legacyClient = new HubspotLegacyClient({ accessToken, clientId, clientSecret })
+
+  const dispositions: CallDispostion[] = await legacyClient.engagements.getCallDispositions();
+  const disposition = dispositions
+    .filter((entry) => entry.label === "Connected")
+    .map((entry) => entry.id)
+    .find(Boolean);
+    
+  return legacyClient.engagements.create({
+    associations: {
+      contactIds: [contactId],
+    },
+    engagement: {
+      active: true,
+      ownerId,
+      timestamp,
+      type: "CALL",
+    },
+    metadata: {
+      body: "",
+      disposition: disposition ? disposition : CALL_DISPOSITION_HANGUP,
+      durationMilliseconds: end - start,
+      externalId,
+      fromNumber,
+      status: "COMPLETED",
+      toNumber,
+    },
+  });
+};

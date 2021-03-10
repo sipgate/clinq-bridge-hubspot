@@ -1,9 +1,8 @@
+import { Contact, ContactTemplate, PhoneNumber, PhoneNumberLabel } from "@clinq/bridge";
 import {
-  Contact,
-  ContactTemplate,
-  PhoneNumber,
-  PhoneNumberLabel
-} from "@clinq/bridge";
+  SimplePublicObject,
+  SimplePublicObjectInput
+} from "@hubspot/api-client/lib/codegen/crm/companies/api";
 
 export const convertToHubspotContact = ({
   firstName: firstname,
@@ -11,75 +10,55 @@ export const convertToHubspotContact = ({
   email,
   organization,
   phoneNumbers
-}: Contact | ContactTemplate) => {
-  const phone = phoneNumbers.filter(
-    phoneNumber => phoneNumber.label === PhoneNumberLabel.WORK
-  );
+}: Contact | ContactTemplate): SimplePublicObjectInput => {
+  const phone = phoneNumbers.filter(phoneNumber => phoneNumber.label === PhoneNumberLabel.WORK);
   const mobilephone = phoneNumbers.filter(
     phoneNumber => phoneNumber.label === PhoneNumberLabel.MOBILE
   );
 
-  const contact = {
-    properties: [
-      {
-        property: "firstname",
-        value: firstname
-      },
-      {
-        property: "lastname",
-        value: lastname
-      },
-      {
-        property: "email",
-        value: email
-      },
-      {
-        property: "company",
-        value: organization
-      },
-      {
-        property: "phone",
-        value: ""
-      },
-      {
-        property: "mobilephone",
-        value: ""
-      }
-    ]
+  let contact = {
+    properties: {
+      firstname: firstname || "",
+      lastname: lastname || "",
+      email: email || "",
+      company: organization || "",
+      phone: "",
+      mobilephone: ""
+    }
   };
 
   if (!phone && !mobilephone) {
-    contact.properties = contact.properties.filter(
-      prop => prop.property !== "phone"
-    );
-    contact.properties.push({
-      property: "phone",
-      value: phoneNumbers[0].phoneNumber
-    });
+    contact = {
+      ...contact,
+      properties: {
+        ...contact.properties,
+        phone: phoneNumbers[0].phoneNumber
+      }
+    };
   } else {
     if (phone.length) {
-      contact.properties = contact.properties.filter(
-        prop => prop.property !== "phone"
-      );
-      contact.properties.push({
-        property: "phone",
-        value: phone[0].phoneNumber
-      });
+      contact = {
+        ...contact,
+        properties: {
+          ...contact.properties,
+          phone: phone[0].phoneNumber
+        }
+      };
     }
     if (mobilephone.length) {
-      contact.properties = contact.properties.filter(
-        prop => prop.property !== "mobilephone"
-      );
-      contact.properties.push({
-        property: "mobilephone",
-        value: mobilephone[0].phoneNumber
-      });
+      contact = {
+        ...contact,
+        properties: {
+          ...contact.properties,
+          mobilephone: mobilephone[0].phoneNumber
+        }
+      };
     }
   }
   return contact;
 };
 
-export const convertToClinqContact = (contact: any): Contact => {
+export const convertToClinqContact = (contact: SimplePublicObject, hubId?: number): Contact => {
   const phoneNumbers: PhoneNumber[] = [];
 
   const landlinePhoneNumber = getFieldValue(contact.properties.phone);
@@ -103,10 +82,10 @@ export const convertToClinqContact = (contact: any): Contact => {
 
   return {
     avatarUrl: null,
-    contactUrl: contact["profile-url"] || null,
+    contactUrl: hubId ? `https://app.hubspot.com/contacts/${hubId}/contact/${contact.id}/` : null,
     email: getFieldValue(contact.properties.email),
     firstName,
-    id: String(contact.vid),
+    id: String(contact.id),
     lastName,
     name: null,
     organization: getFieldValue(contact.properties.company),
@@ -114,5 +93,4 @@ export const convertToClinqContact = (contact: any): Contact => {
   };
 };
 
-const getFieldValue = (field: any) =>
-  field && field.value ? field.value : null;
+const getFieldValue = (field: any) => field || null;
