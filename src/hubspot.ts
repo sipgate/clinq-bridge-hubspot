@@ -77,8 +77,6 @@ export const getHubspotContacts = async (
 
   const { hub_id } = await getTokenInfo(config);
 
-  await getOwnerId(config)
-
   const contactsResponse = await client.crm.contacts.basicApi.getPage(100, after, properties);
 
   const mappedContacts = contactsResponse.body.results.map(c => convertToClinqContact(c, hub_id));
@@ -175,8 +173,6 @@ const getTokenInfo = async (config: Config) => {
   const { data } = await Axios.get<HubInfo>(
     `https://api.hubapi.com/oauth/v1/access-tokens/${accessToken}`
   );
-  console.log("token info", data)
-
   return data;
 };
 
