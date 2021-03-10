@@ -3,8 +3,8 @@
 ## Configuration
 
 ```bash
-cp env.sh.dist env.sh
-vim env.sh
+cp .env.dist .env
+vim .env
 # Add your hubspot client ID and secret
 ```
 
@@ -12,7 +12,6 @@ vim env.sh
 
 ```bash
 yarn
-. ./env.sh
 yarn start
 ```
 
