@@ -256,7 +256,7 @@ const createCallEngagement = async (
 ) => {
   const client = await createClient(config);
   const accessToken = client.getOptions().accessToken;
-  
+
   if(!accessToken) {
     throw new Error(`No access token found`);
   }
@@ -267,7 +267,7 @@ const createCallEngagement = async (
     .filter((entry) => entry.label === "Connected")
     .map((entry) => entry.id)
     .find(Boolean);
-    
+
   return legacyClient.engagements.create({
     associations: {
       contactIds: [contactId],

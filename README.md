@@ -17,6 +17,12 @@ yarn start
 
 ## Examples
 
+### Get contacts
+
+```bash
+curl -H "content-type: application/json" -H 'X-Provider-Locale: de_DE' -H 'X-Provider-Key: xxx-yyy-zzz' http://localhost:8080/contacts
+```
+
 ### Create call event
 
 ```bash
