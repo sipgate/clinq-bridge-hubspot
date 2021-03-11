@@ -37,7 +37,6 @@ const isTokenValid = (apiKey: string) => {
 export const createClient = async (config: Config) => {
   const [accessToken, refreshToken] = config.apiKey.split(":");
   const client = new Hubspot();
-  client.setAccessToken(accessToken);
 
   if (!isTokenValid(config.apiKey)) {
     infoLogger(config, `Refreshing access token`);
@@ -63,23 +62,33 @@ export const createClient = async (config: Config) => {
     return client;
   }
 
+  const cachedToken = tokenCache.get(config.apiKey)?.token || accessToken
+
+  client.setAccessToken(cachedToken);
+
   return client;
 };
 
 export const getHubspotContacts = async (
   config: Config,
   after?: string,
+  hubId?: number,
   accumulated: Contact[] = []
 ): Promise<Contact[]> => {
   const client = await createClient(config);
 
   const properties = ["phone", "mobilephone", "firstname", "lastname", "email", "company"];
 
-  const { hub_id } = await getTokenInfo(config);
+  let userHubId = hubId;
+
+  if(!userHubId){
+    const { hub_id } = await getTokenInfo(config);
+    userHubId = hub_id;
+  }
 
   const contactsResponse = await client.crm.contacts.basicApi.getPage(100, after, properties);
 
-  const mappedContacts = contactsResponse.body.results.map(c => convertToClinqContact(c, hub_id));
+  const mappedContacts = contactsResponse.body.results.map(c => convertToClinqContact(c, userHubId));
 
   const afterToken = contactsResponse.body.paging?.next?.after;
 
@@ -88,7 +97,7 @@ export const getHubspotContacts = async (
   infoLogger(config, `Fetched ${mergedContacts.length} contacts`);
 
   if (afterToken) {
-    return getHubspotContacts(config, afterToken, mergedContacts);
+    return getHubspotContacts(config, afterToken, userHubId, mergedContacts);
   } else {
     return mergedContacts;
   }
@@ -168,8 +177,12 @@ export const handleHubspotOAuth2Callback = async (
 };
 
 const getTokenInfo = async (config: Config) => {
+
+  infoLogger(config, `Get token info`);
+
   const client = await createClient(config);
   const accessToken = client.getOptions().accessToken;
+
   const { data } = await Axios.get<HubInfo>(
     `https://api.hubapi.com/oauth/v1/access-tokens/${accessToken}`
   );
@@ -177,8 +190,9 @@ const getTokenInfo = async (config: Config) => {
 };
 
 const getOwnerId = async  (config: Config) => {
-  const {user: email} = await getTokenInfo(config)
   const client = await createClient(config);
+  const {user: email} = await getTokenInfo(config)
+
   const {body: {results}} = await client.crm.owners.defaultApi.getPage(email)
 
   if (!results.length || !results[0].id) {
