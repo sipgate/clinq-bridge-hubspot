@@ -22,7 +22,7 @@
     "format": "prettier --write \"src/**/*.{ts,js,css}\""
   },
   "dependencies": {
-    "@clinq/bridge": "^11.2.1",
+    "@clinq/bridge": "^11.2.2",
     "@hubspot/api-client": "^3.4.1",
     "@types/express": "^4.17.0",
     "@types/node": "^14.14.33",
