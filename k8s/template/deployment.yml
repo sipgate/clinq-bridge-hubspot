@@ -44,7 +44,7 @@ spec:
               port: 8080
           env:
             - name: CACHE_REFRESH_INTERVAL
-              value: 3600
+              value: "3600"
             - name: REDIS_URL
               value: redis://10.237.97.227
             - name: HUBSPOT_CLIENT_ID
