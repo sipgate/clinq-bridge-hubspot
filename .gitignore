@@ -4,3 +4,6 @@ env.sh
 .env
 .tags
 dist
+k8s/secrets.yml
+k8s/prod.yml
+
