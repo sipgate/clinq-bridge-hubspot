@@ -1,4 +1,9 @@
-import { Contact, ContactTemplate, PhoneNumber, PhoneNumberLabel } from "@clinq/bridge";
+import {
+  Contact,
+  ContactTemplate,
+  PhoneNumber,
+  PhoneNumberLabel,
+} from "@clinq/bridge";
 import {
   SimplePublicObject,
   SimplePublicObjectInput,
@@ -11,7 +16,9 @@ export const convertToHubspotContact = ({
   organization,
   phoneNumbers,
 }: Contact | ContactTemplate): SimplePublicObjectInput => {
-  const phone = phoneNumbers.filter((phoneNumber) => phoneNumber.label === PhoneNumberLabel.WORK);
+  const phone = phoneNumbers.filter(
+    (phoneNumber) => phoneNumber.label === PhoneNumberLabel.WORK
+  );
   const mobilephone = phoneNumbers.filter(
     (phoneNumber) => phoneNumber.label === PhoneNumberLabel.MOBILE
   );
@@ -58,7 +65,10 @@ export const convertToHubspotContact = ({
   return contact;
 };
 
-export const convertToClinqContact = (contact: SimplePublicObject, hubId?: number): Contact => {
+export const convertToClinqContact = (
+  contact: SimplePublicObject,
+  hubId?: number
+): Contact => {
   const phoneNumbers: PhoneNumber[] = [];
 
   const landlinePhoneNumber = getFieldValue(contact.properties.phone);
@@ -82,7 +92,9 @@ export const convertToClinqContact = (contact: SimplePublicObject, hubId?: numbe
 
   return {
     avatarUrl: null,
-    contactUrl: hubId ? `https://app.hubspot.com/contacts/${hubId}/contact/${contact.id}/` : null,
+    contactUrl: hubId
+      ? `https://app.hubspot.com/contacts/${hubId}/contact/${contact.id}/`
+      : null,
     email: getFieldValue(contact.properties.email),
     firstName,
     id: String(contact.id),

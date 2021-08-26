@@ -83,7 +83,14 @@ export const getHubspotContacts = async (
 ): Promise<Contact[]> => {
   const client = await createClient(config);
 
-  const properties = ["phone", "mobilephone", "firstname", "lastname", "email", "company"];
+  const properties = [
+    "phone",
+    "mobilephone",
+    "firstname",
+    "lastname",
+    "email",
+    "company",
+  ];
 
   let userHubId = hubId;
 
@@ -92,7 +99,11 @@ export const getHubspotContacts = async (
     userHubId = hub_id;
   }
 
-  const contactsResponse = await client.crm.contacts.basicApi.getPage(100, after, properties);
+  const contactsResponse = await client.crm.contacts.basicApi.getPage(
+    100,
+    after,
+    properties
+  );
 
   const mappedContacts = contactsResponse.body.results.map((c) =>
     convertToClinqContact(c, userHubId)
@@ -130,7 +141,10 @@ export const updateHubspotContact = async (
   const client = await createClient(config);
   const hubspotContact = convertToHubspotContact(contact);
   const { hub_id } = await getTokenInfo(config);
-  const { body } = await client.crm.contacts.basicApi.update(id, hubspotContact);
+  const { body } = await client.crm.contacts.basicApi.update(
+    id,
+    hubspotContact
+  );
   return convertToClinqContact(body, hub_id);
 };
 
@@ -142,7 +156,8 @@ export const archiveHubspotContact = async (config: Config, id: string) => {
 export const createCallEvent = async (config: Config, event: CallEvent) => {
   const ownerId = await getOwnerId(config);
 
-  const phoneNumber = event.direction === CallDirection.OUT ? event.to : event.from;
+  const phoneNumber =
+    event.direction === CallDirection.OUT ? event.to : event.from;
 
   const contact = await getContactByPhoneNumber(config, phoneNumber);
   if (!contact) {
@@ -158,7 +173,11 @@ export const createCallEvent = async (config: Config, event: CallEvent) => {
 
 export const getHubspotOAuth2RedirectUrl = () => {
   const client = new Hubspot();
-  const uri = client.oauth.getAuthorizationUrl(clientId, redirectUrl, CONTACT_SCOPES.join(" "));
+  const uri = client.oauth.getAuthorizationUrl(
+    clientId,
+    redirectUrl,
+    CONTACT_SCOPES.join(" ")
+  );
   return Promise.resolve(uri);
 };
 
@@ -229,14 +248,22 @@ const getContactByPhoneNumber = async (config: Config, phoneNumber: string) => {
 
   const originalQuery = searchPromise(phoneNumber);
   const localizedQuery = searchPromise(parsedPhoneNumber.localized);
-  const localizedQueryNormalized = searchPromise(normalizePhoneNumber(parsedPhoneNumber.localized));
+  const localizedQueryNormalized = searchPromise(
+    normalizePhoneNumber(parsedPhoneNumber.localized)
+  );
   const e164Query = searchPromise(parsedPhoneNumber.e164);
-  const e164QueryNormalized = searchPromise(normalizePhoneNumber(parsedPhoneNumber.e164));
+  const e164QueryNormalized = searchPromise(
+    normalizePhoneNumber(parsedPhoneNumber.e164)
+  );
 
   const results = await Promise.all(
-    [originalQuery, localizedQuery, localizedQueryNormalized, e164Query, e164QueryNormalized].map(
-      (promise) => promise.catch(() => ({ body: { results: [] } }))
-    )
+    [
+      originalQuery,
+      localizedQuery,
+      localizedQueryNormalized,
+      e164Query,
+      e164QueryNormalized,
+    ].map((promise) => promise.catch(() => ({ body: { results: [] } })))
   );
 
   const result = results
@@ -260,7 +287,14 @@ const createCallEngagement = async (
   config: Config,
   contactId: string,
   ownerId: string,
-  { id: externalId, from: fromNumber, to: toNumber, end, start, start: timestamp }: CallEvent
+  {
+    id: externalId,
+    from: fromNumber,
+    to: toNumber,
+    end,
+    start,
+    start: timestamp,
+  }: CallEvent
 ) => {
   const client = await createClient(config);
   const accessToken = client.getOptions().accessToken;
@@ -268,9 +302,14 @@ const createCallEngagement = async (
   if (!accessToken) {
     throw new Error(`No access token found`);
   }
-  const legacyClient = new HubspotLegacyClient({ accessToken, clientId, clientSecret });
+  const legacyClient = new HubspotLegacyClient({
+    accessToken,
+    clientId,
+    clientSecret,
+  });
 
-  const dispositions: CallDispostion[] = await legacyClient.engagements.getCallDispositions();
+  const dispositions: CallDispostion[] =
+    await legacyClient.engagements.getCallDispositions();
   const disposition = dispositions
     .filter((entry) => entry.label === "Connected")
     .map((entry) => entry.id)

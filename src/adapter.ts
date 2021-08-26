@@ -27,7 +27,10 @@ export const getContacts = async (config: Config) => {
   }
 };
 
-export const createContact = async (config: Config, contact: ContactTemplate): Promise<Contact> => {
+export const createContact = async (
+  config: Config,
+  contact: ContactTemplate
+): Promise<Contact> => {
   try {
     const hubspotContact = await createHubspotContact(config, contact);
     infoLogger(config, `Created contact ${hubspotContact.id}`);
@@ -63,12 +66,21 @@ export const deleteContact = async (config: Config, id: string) => {
 };
 
 export const handleCallEvent = async (config: Config, event: CallEvent) => {
-  infoLogger(config, `Creating call event for ${event.id}, user ${event.user.id}`);
+  infoLogger(
+    config,
+    `Creating call event for ${event.id}, user ${event.user.id}`
+  );
   try {
     await createCallEvent(config, event);
-    infoLogger(config, `Created call event for ${event.id}, user ${event.user.id}`);
+    infoLogger(
+      config,
+      `Created call event for ${event.id}, user ${event.user.id}`
+    );
   } catch (error) {
-    errorLogger(config, `Could not create call event: ${error.message}", user ${event.user.id}`);
+    errorLogger(
+      config,
+      `Could not create call event: ${error.message}", user ${event.user.id}`
+    );
     throw new ServerError(500, "Could not create call event");
   }
 };
