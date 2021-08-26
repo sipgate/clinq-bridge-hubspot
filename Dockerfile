@@ -7,6 +7,7 @@ COPY package*.json ./
 COPY src/ src/
 COPY tsconfig.json .
 RUN npm install --quiet
+RUN npm run build
 
 FROM node:16
 ENV NODE_ENV=production
