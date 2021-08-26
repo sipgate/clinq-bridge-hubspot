@@ -1,4 +1,11 @@
-import { CallDirection, CallEvent, Config, Contact, ContactTemplate, ContactUpdate } from "@clinq/bridge";
+import {
+  CallDirection,
+  CallEvent,
+  Config,
+  Contact,
+  ContactTemplate,
+  ContactUpdate,
+} from "@clinq/bridge";
 import { Client as Hubspot } from "@hubspot/api-client";
 import Axios from "axios";
 import HubspotLegacyClient from "hubspot";
@@ -10,9 +17,8 @@ import {
   normalizePhoneNumber,
   parseEnvironment,
   parsePhoneNumber,
-  warnLogger
+  warnLogger,
 } from "./utils";
-
 
 const { clientId, clientSecret, redirectUrl } = parseEnvironment();
 
@@ -41,7 +47,7 @@ export const createClient = async (config: Config) => {
   if (!isTokenValid(config.apiKey)) {
     infoLogger(config, `Refreshing access token`);
     const {
-      body: { accessToken, expiresIn }
+      body: { accessToken, expiresIn },
     } = await client.oauth.defaultApi.createToken(
       "refresh_token",
       undefined,
@@ -56,13 +62,13 @@ export const createClient = async (config: Config) => {
     tokenCache.set(config.apiKey, {
       token: accessToken,
       expiresIn,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
 
     return client;
   }
 
-  const cachedToken = tokenCache.get(config.apiKey)?.token || accessToken
+  const cachedToken = tokenCache.get(config.apiKey)?.token || accessToken;
 
   client.setAccessToken(cachedToken);
 
@@ -81,14 +87,16 @@ export const getHubspotContacts = async (
 
   let userHubId = hubId;
 
-  if(!userHubId){
+  if (!userHubId) {
     const { hub_id } = await getTokenInfo(config);
     userHubId = hub_id;
   }
 
   const contactsResponse = await client.crm.contacts.basicApi.getPage(100, after, properties);
 
-  const mappedContacts = contactsResponse.body.results.map(c => convertToClinqContact(c, userHubId));
+  const mappedContacts = contactsResponse.body.results.map((c) =>
+    convertToClinqContact(c, userHubId)
+  );
 
   const afterToken = contactsResponse.body.paging?.next?.after;
 
@@ -134,8 +142,7 @@ export const archiveHubspotContact = async (config: Config, id: string) => {
 export const createCallEvent = async (config: Config, event: CallEvent) => {
   const ownerId = await getOwnerId(config);
 
-  const phoneNumber =
-    event.direction === CallDirection.OUT ? event.to : event.from;
+  const phoneNumber = event.direction === CallDirection.OUT ? event.to : event.from;
 
   const contact = await getContactByPhoneNumber(config, phoneNumber);
   if (!contact) {
@@ -161,7 +168,7 @@ export const handleHubspotOAuth2Callback = async (
   const client = new Hubspot();
 
   const {
-    body: { accessToken, refreshToken }
+    body: { accessToken, refreshToken },
   } = await client.oauth.defaultApi.createToken(
     "authorization_code",
     code,
@@ -172,12 +179,11 @@ export const handleHubspotOAuth2Callback = async (
 
   return {
     apiKey: `${accessToken}:${refreshToken}`,
-    apiUrl: ""
+    apiUrl: "",
   };
 };
 
 const getTokenInfo = async (config: Config) => {
-
   infoLogger(config, `Get token info`);
 
   const client = await createClient(config);
@@ -189,18 +195,20 @@ const getTokenInfo = async (config: Config) => {
   return data;
 };
 
-const getOwnerId = async  (config: Config) => {
+const getOwnerId = async (config: Config) => {
   const client = await createClient(config);
-  const {user: email} = await getTokenInfo(config)
+  const { user: email } = await getTokenInfo(config);
 
-  const {body: {results}} = await client.crm.owners.defaultApi.getPage(email)
+  const {
+    body: { results },
+  } = await client.crm.owners.defaultApi.getPage(email);
 
   if (!results.length || !results[0].id) {
     throw new Error(`Cannot find owner id for email ${email}`);
   }
 
   return results[0].id;
-}
+};
 
 const getContactByPhoneNumber = async (config: Config, phoneNumber: string) => {
   const client = await createClient(config);
@@ -209,37 +217,30 @@ const getContactByPhoneNumber = async (config: Config, phoneNumber: string) => {
 
   const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
 
-  const searchPromise = (value: string) => client.crm.contacts.searchApi.doSearch({
-    query: value,
-    after: 0,
-    sorts: [],
-    properties: ["mobilephone", "phone"],
-    limit: 20,
-    filterGroups: []
-  })
+  const searchPromise = (value: string) =>
+    client.crm.contacts.searchApi.doSearch({
+      query: value,
+      after: 0,
+      sorts: [],
+      properties: ["mobilephone", "phone"],
+      limit: 20,
+      filterGroups: [],
+    });
 
   const originalQuery = searchPromise(phoneNumber);
   const localizedQuery = searchPromise(parsedPhoneNumber.localized);
-  const localizedQueryNormalized = searchPromise(
-    normalizePhoneNumber(parsedPhoneNumber.localized)
-  );
+  const localizedQueryNormalized = searchPromise(normalizePhoneNumber(parsedPhoneNumber.localized));
   const e164Query = searchPromise(parsedPhoneNumber.e164);
-  const e164QueryNormalized = searchPromise(
-    normalizePhoneNumber(parsedPhoneNumber.e164)
-  );
+  const e164QueryNormalized = searchPromise(normalizePhoneNumber(parsedPhoneNumber.e164));
 
   const results = await Promise.all(
-    [
-      originalQuery,
-      localizedQuery,
-      localizedQueryNormalized,
-      e164Query,
-      e164QueryNormalized,
-    ].map((promise) => promise.catch(() => ({ body:{results: []}})))
+    [originalQuery, localizedQuery, localizedQueryNormalized, e164Query, e164QueryNormalized].map(
+      (promise) => promise.catch(() => ({ body: { results: [] } }))
+    )
   );
 
   const result = results
-    .map(({body: {results}}) => results)
+    .map(({ body: { results } }) => results)
     .filter((contacts) => Array.isArray(contacts) && contacts.length > 0)
     .find(Boolean);
 
@@ -259,22 +260,15 @@ const createCallEngagement = async (
   config: Config,
   contactId: string,
   ownerId: string,
-  {
-    id: externalId,
-    from: fromNumber,
-    to: toNumber,
-    end,
-    start,
-    start: timestamp,
-  }: CallEvent
+  { id: externalId, from: fromNumber, to: toNumber, end, start, start: timestamp }: CallEvent
 ) => {
   const client = await createClient(config);
   const accessToken = client.getOptions().accessToken;
 
-  if(!accessToken) {
+  if (!accessToken) {
     throw new Error(`No access token found`);
   }
-  const legacyClient = new HubspotLegacyClient({ accessToken, clientId, clientSecret })
+  const legacyClient = new HubspotLegacyClient({ accessToken, clientId, clientSecret });
 
   const dispositions: CallDispostion[] = await legacyClient.engagements.getCallDispositions();
   const disposition = dispositions

@@ -6,7 +6,7 @@ import {
   getOAuth2RedirectUrl,
   handleCallEvent,
   handleOAuth2Callback,
-  updateContact
+  updateContact,
 } from "./adapter";
 
 const adapter: Adapter = {
@@ -16,7 +16,7 @@ const adapter: Adapter = {
   getOAuth2RedirectUrl,
   handleCallEvent,
   handleOAuth2Callback,
-  updateContact
+  updateContact,
 };
 
 start(adapter);

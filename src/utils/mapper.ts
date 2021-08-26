@@ -1,7 +1,7 @@
 import { Contact, ContactTemplate, PhoneNumber, PhoneNumberLabel } from "@clinq/bridge";
 import {
   SimplePublicObject,
-  SimplePublicObjectInput
+  SimplePublicObjectInput,
 } from "@hubspot/api-client/lib/codegen/crm/companies/api";
 
 export const convertToHubspotContact = ({
@@ -9,11 +9,11 @@ export const convertToHubspotContact = ({
   lastName: lastname,
   email,
   organization,
-  phoneNumbers
+  phoneNumbers,
 }: Contact | ContactTemplate): SimplePublicObjectInput => {
-  const phone = phoneNumbers.filter(phoneNumber => phoneNumber.label === PhoneNumberLabel.WORK);
+  const phone = phoneNumbers.filter((phoneNumber) => phoneNumber.label === PhoneNumberLabel.WORK);
   const mobilephone = phoneNumbers.filter(
-    phoneNumber => phoneNumber.label === PhoneNumberLabel.MOBILE
+    (phoneNumber) => phoneNumber.label === PhoneNumberLabel.MOBILE
   );
 
   let contact = {
@@ -23,8 +23,8 @@ export const convertToHubspotContact = ({
       email: email || "",
       company: organization || "",
       phone: "",
-      mobilephone: ""
-    }
+      mobilephone: "",
+    },
   };
 
   if (!phone && !mobilephone) {
@@ -32,8 +32,8 @@ export const convertToHubspotContact = ({
       ...contact,
       properties: {
         ...contact.properties,
-        phone: phoneNumbers[0].phoneNumber
-      }
+        phone: phoneNumbers[0].phoneNumber,
+      },
     };
   } else {
     if (phone.length) {
@@ -41,8 +41,8 @@ export const convertToHubspotContact = ({
         ...contact,
         properties: {
           ...contact.properties,
-          phone: phone[0].phoneNumber
-        }
+          phone: phone[0].phoneNumber,
+        },
       };
     }
     if (mobilephone.length) {
@@ -50,8 +50,8 @@ export const convertToHubspotContact = ({
         ...contact,
         properties: {
           ...contact.properties,
-          mobilephone: mobilephone[0].phoneNumber
-        }
+          mobilephone: mobilephone[0].phoneNumber,
+        },
       };
     }
   }
@@ -65,7 +65,7 @@ export const convertToClinqContact = (contact: SimplePublicObject, hubId?: numbe
   if (landlinePhoneNumber) {
     phoneNumbers.push({
       label: PhoneNumberLabel.WORK,
-      phoneNumber: landlinePhoneNumber
+      phoneNumber: landlinePhoneNumber,
     });
   }
 
@@ -73,7 +73,7 @@ export const convertToClinqContact = (contact: SimplePublicObject, hubId?: numbe
   if (mobilePhoneNumber) {
     phoneNumbers.push({
       label: PhoneNumberLabel.MOBILE,
-      phoneNumber: mobilePhoneNumber
+      phoneNumber: mobilePhoneNumber,
     });
   }
 
@@ -89,7 +89,7 @@ export const convertToClinqContact = (contact: SimplePublicObject, hubId?: numbe
     lastName,
     name: null,
     organization: getFieldValue(contact.properties.company),
-    phoneNumbers
+    phoneNumbers,
   };
 };
 

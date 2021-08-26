@@ -7,7 +7,7 @@ export interface OAuth2Options {
 const {
   HUBSPOT_CLIENT_ID: clientId,
   HUBSPOT_CLIENT_SECRET: clientSecret,
-  HUBSPOT_REDIRECT_URL: redirectUrl
+  HUBSPOT_REDIRECT_URL: redirectUrl,
 } = process.env;
 
 export const parseEnvironment = (): OAuth2Options => {
@@ -26,6 +26,6 @@ export const parseEnvironment = (): OAuth2Options => {
   return {
     clientId,
     clientSecret,
-    redirectUrl
+    redirectUrl,
   };
 };

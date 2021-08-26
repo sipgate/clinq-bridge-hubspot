@@ -4,7 +4,7 @@ import {
   Contact,
   ContactTemplate,
   ContactUpdate,
-  ServerError
+  ServerError,
 } from "@clinq/bridge";
 import { Request } from "express";
 import {
@@ -14,7 +14,7 @@ import {
   getHubspotContacts,
   getHubspotOAuth2RedirectUrl,
   handleHubspotOAuth2Callback,
-  updateHubspotContact
+  updateHubspotContact,
 } from "./hubspot";
 import { errorLogger, infoLogger } from "./utils";
 
@@ -76,7 +76,7 @@ export const handleCallEvent = async (config: Config, event: CallEvent) => {
 export const getOAuth2RedirectUrl = getHubspotOAuth2RedirectUrl;
 
 export const handleOAuth2Callback = async ({
-  query: { code }
+  query: { code },
 }: Request): Promise<{ apiKey: string; apiUrl: string }> => {
-    return handleHubspotOAuth2Callback(code as string);
-  };
+  return handleHubspotOAuth2Callback(code as string);
+};
