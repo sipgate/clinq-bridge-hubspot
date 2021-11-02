@@ -24,7 +24,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@clinq/bridge": "^11.3.1",
+    "@clinq/bridge": "^11.8.1",
     "@hubspot/api-client": "^3.4.1",
     "axios": "^0.21.1",
     "env-cmd": "^10.1.0",
