@@ -46,7 +46,7 @@ spec:
             - name: CACHE_REFRESH_INTERVAL
               value: "3600"
             - name: REDIS_URL
-              value: redis://clinq-cache-redis-master.redis.svc.cluster.local
+              value: rediss://10.37.248.211:6378
             - name: HUBSPOT_CLIENT_ID
               value: 6bd4c77d-7d54-47fe-b637-6be96d8c3c05
             - name: OAUTH_IDENTIFIER
