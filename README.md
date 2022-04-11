@@ -11,8 +11,8 @@ vim .env
 ## Usage
 
 ```bash
-yarn
-yarn start
+npm install
+npm start
 ```
 
 ## Examples
