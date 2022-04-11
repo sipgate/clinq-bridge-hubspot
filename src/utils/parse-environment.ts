@@ -1,5 +1,3 @@
-require("dotenv").config();
-
 export interface OAuth2Options {
   clientId: string;
   clientSecret: string;
