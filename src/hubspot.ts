@@ -22,7 +22,17 @@ import {
 
 const { clientId, clientSecret, redirectUrl } = parseEnvironment();
 
-const CONTACT_SCOPES = ["contacts"];
+const CONTACT_SCOPES = [
+  "crm.objects.contacts.read",
+  "crm.objects.contacts.write",
+  "crm.objects.companies.write",
+  "crm.schemas.contacts.read",
+  "crm.objects.companies.read",
+  "crm.objects.deals.read",
+  "crm.objects.deals.write",
+  "crm.schemas.companies.read",
+  "crm.objects.owners.read",
+];
 
 type TokenInfo = {
   token: string;
