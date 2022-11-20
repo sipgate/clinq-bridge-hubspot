@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@clinq/bridge": "^11.8.1",
-    "@hubspot/api-client": "^3.4.1",
+    "@hubspot/api-client": "^7.0.0",
     "axios": "^0.21.1",
     "env-cmd": "^10.1.0",
     "express": "^4.17.1",
