@@ -31,7 +31,7 @@
     "express": "^4.17.1",
     "google-libphonenumber": "^3.2.3",
     "hubspot": "^2.3.14",
-    "husky": "^7.0.2"
+    "husky": "^8.0.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.0",
